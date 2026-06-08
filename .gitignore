@@ -127,3 +127,13 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# extra
+CLAUDE.md
+PLAN.md
+dev.py 
+.dev/
+schema.json
+docker/
+.vscode
+*_bak.py
