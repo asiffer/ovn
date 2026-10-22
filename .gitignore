@@ -137,3 +137,8 @@ schema.json
 docker/
 .vscode
 *_bak.py
+
+Makefile
+AGENTS.md
+CLAUDE.md
+dev.py
