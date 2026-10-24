@@ -1,18 +1,22 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
-class OVSDBError(Exception):
+class BaseError(Exception):
+    pass
+
+
+class OVSDBError(BaseError):
     """
     Error during the communication with the database
     """
 
     method: str
     error: str
-    id: Optional[str]
-    result: List[Any]
+    id: str | None
+    result: list[Any]
 
     def __init__(
-        self, method: str, error: str, id: Optional[str], result: List[Any]
+        self, method: str, error: str, id: str | None, result: list[Any]
     ) -> None:
         self.method = method
         self.error = error
@@ -25,16 +29,35 @@ class OVSDBError(Exception):
         return msg
 
 
-class TransactionError(Exception):
+class TransactionError(BaseError):
     error: str
-    issue: Dict[str, str]
+    issue: dict[str, str]
     details: str
 
-    def __init__(self, error: str, details: str, issue: Dict[str, str] = {}) -> None:
+    def __init__(
+        self,
+        error: str,
+        details: str,
+        issue: dict[str, str] | None = None,
+    ) -> None:
         self.error = error
         self.details = details
-        self.issue = issue
+        self.issue = issue or {}
 
     def __str__(self) -> str:
         msg = f"Error during transaction '{self.error}':{self.issue} ({self.details})\n"
         return msg
+
+
+class EmptyResultError(BaseError):
+    """
+    Error when the result of a query is empty
+    """
+
+    def __init__(self, method: str | None = None) -> None:
+        self.method = method
+
+    def __str__(self) -> str:
+        if self.method:
+            return f"Method '{self.method}' returns no result"
+        return "No result returned"

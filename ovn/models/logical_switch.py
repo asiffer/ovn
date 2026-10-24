@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING
 
 from ovn.models._columns import LogicalSwitchColumns
 from ovn.models.base import Model
@@ -16,7 +16,7 @@ class LogicalSwitch(LogicalSwitchColumns, Model):
 
     def plug(
         self, device: "LogicalRouter", **kwargs
-    ) -> Tuple[LogicalSwitchPort, "LogicalRouterPort"]:
+    ) -> tuple[LogicalSwitchPort, "LogicalRouterPort"]:
         """Connect this switch to a logical router.
 
         Creates the matching switch and router ports and wires them together.

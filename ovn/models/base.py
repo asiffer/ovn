@@ -1,5 +1,7 @@
+import builtins
 import re
-from typing import Any, Callable, Dict, List
+from collections.abc import Callable
+from typing import Any, ClassVar, get_args, get_origin
 
 from ovn.manager import Manager
 
@@ -27,7 +29,7 @@ def need_uuid(func: Callable):
 
 
 class Model:
-    objects: Manager
+    objects: ClassVar[Any]
     # "_uuid": This column, which contains exactly one UUID value, is
     # initialized to a random value by the database engine when it
     # creates a row.  It is read-only, and its value never changes
@@ -47,17 +49,18 @@ class Model:
     def _table(cls) -> str:
         """Return the name of the OVN table that
         corresponds to the class"""
-        if hasattr(cls, "__table__"):
-            return getattr(cls, "__table__")
+        table = cls.__dict__.get("__table__")
+        if isinstance(table, str):
+            return table
         return class_to_table(cls.__name__)
 
     @classmethod
-    def list(cls) -> List["Model"]:
+    def list(cls) -> list["Model"]:
         """List all the rows of the table as model instances"""
         return cls.objects.list()
 
     @property
-    def fields(self) -> List[str]:
+    def fields(self) -> builtins.list[str]:
         return self.objects._attributes
 
     def __str__(self):
@@ -91,12 +94,14 @@ class Model:
         if "objects" in cls.__annotations__:
             # a subclass may re-define the manager type (e.g. to enrich it)
             manager = cls.__annotations__["objects"]
-            setattr(cls, "objects", manager(cls))
+            if get_origin(manager) is ClassVar:
+                manager = get_args(manager)[0]
+            cls.objects = manager(cls)
         else:
-            setattr(cls, "objects", Manager(cls))
+            cls.objects = Manager(cls)
             cls.__annotations__["objects"] = Manager[cls]  # ty: ignore[invalid-type-form]
 
-    def as_row(self) -> Dict[str, Any]:
+    def as_row(self) -> dict[str, Any]:
         """Return a record with the mutable attributes and their values"""
         out = {}
         # build the dict

@@ -1,11 +1,11 @@
 import os
 import socket
 import uuid
-from typing import Any, Dict
+from typing import Any
 
 from ovn.client import DB_NAME, OperationComposer
 from ovn.ovsdb import OVSDBClient
-from ovn.ovsdb.errors import OVSDBError, TransactionError
+from ovn.ovsdb.errors import BaseError, OVSDBError, TransactionError
 from ovn.ovsdb.ovsdb_client import DefaultOVSDBClient
 
 
@@ -22,7 +22,7 @@ def test_ovn_list_dbs(ovsdb_client: OVSDBClient):
 def test_ovn_get_schema(ovsdb_client: OVSDBClient):
     schema = ovsdb_client.get_schema("OVN_Northbound")
     for k in ["cksum", "name", "version", "tables"]:
-        assert k in schema.keys()
+        assert k in schema
 
 
 def test_ovn_add_logical_switch(ovsdb_client: OVSDBClient):
@@ -35,7 +35,7 @@ def test_ovn_add_logical_switch(ovsdb_client: OVSDBClient):
     }
     result = ovsdb_client.transact(db_name="OVN_Northbound", operations=operation)
     assert len(result) > 0
-    assert "uuid" in result[0].keys()
+    assert "uuid" in result[0]
 
 
 def test_ovn_list_logical_switch(ovsdb_client: OVSDBClient):
@@ -62,7 +62,7 @@ def test_ovn_add_then_delete_logical_switch(ovsdb_client: OVSDBClient):
     #
     # Add switch
     #
-    operation: Dict[str, Any] = {
+    operation: dict[str, Any] = {
         "op": "insert",
         "table": "Logical_Switch",
         "row": {},
@@ -134,7 +134,7 @@ def test_ovsdb_error():
     client = DefaultOVSDBClient()
     try:
         client.send_auto("transact", [])
-    except BaseException as err:
+    except BaseError as err:
         print(f"{err}")
         assert isinstance(err, OVSDBError)
 
@@ -146,6 +146,6 @@ def test_transact_error():
     )
     try:
         client.transact(db_name=DB_NAME, operations=composer.operations())
-    except BaseException as err:
+    except BaseError as err:
         print(f"{err}")
         assert isinstance(err, TransactionError)

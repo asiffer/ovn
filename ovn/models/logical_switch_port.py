@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from ovn.manager import Manager
 from ovn.models._columns import LogicalSwitchPortColumns
@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from ovn.models.logical_switch import LogicalSwitch
 
 
-class LogicalSwitchPortManager(Manager):
+class LogicalSwitchPortManager(Manager["LogicalSwitchPort"]):
     def add_to_logical_switch(
         self, switch: "LogicalSwitch", **kwargs
     ) -> "LogicalSwitchPort":
@@ -25,7 +25,7 @@ class LogicalSwitchPortManager(Manager):
 
 
 class LogicalSwitchPort(LogicalSwitchPortColumns, Model):
-    objects: LogicalSwitchPortManager
+    objects: ClassVar[LogicalSwitchPortManager]
 
     def plug(self, port: "LogicalRouterPort") -> None:
         """Attach this switch port to a logical router port.

@@ -67,7 +67,7 @@ import logging
 import os
 import random
 from functools import lru_cache
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -117,12 +117,12 @@ def _ovs() -> OVSDBClient:
     return OVSDBClient(settings.ovs_db)
 
 
-def _ovs_map(pairs: Dict[str, str]) -> list:
+def _ovs_map(pairs: dict[str, str]) -> list:
     """OVSDB-encode a string->string map column value."""
     return ["map", [[k, v] for k, v in pairs.items()]]
 
 
-def _ovs_find_port(name: str) -> Optional[list]:
+def _ovs_find_port(name: str) -> list | None:
     """Return the raw ``_uuid`` (``["uuid", ...]``) of Port ``name``, or None."""
     result = _ovs().transact(
         OVS_DB_NAME,
@@ -134,7 +134,7 @@ def _ovs_find_port(name: str) -> Optional[list]:
     return rows[0]["_uuid"] if rows else None
 
 
-def _ovs_add_port(bridge: str, name: str, external_ids: Dict[str, str]) -> None:
+def _ovs_add_port(bridge: str, name: str, external_ids: dict[str, str]) -> None:
     """Plug ``name`` into ``bridge`` with the given interface ``external_ids``.
 
     One transaction: insert the Interface and Port, then link the Port into
@@ -185,7 +185,7 @@ def _ovs_del_port(bridge: str, name: str) -> None:
 # --- veth dataplane (netlink via pyroute2, no ``ip`` subprocess) ------------
 
 
-def _create_veth(host_veth: str, cont_veth: str, mac: Optional[str]) -> None:
+def _create_veth(host_veth: str, cont_veth: str, mac: str | None) -> None:
     """Create the veth pair, set the container end's MAC, bring the host end up.
 
     Rolls the pair back if any step fails, so a half-built pair never lingers.
@@ -227,7 +227,7 @@ def _container_veth(endpoint_id: str) -> str:
     return endpoint_id[:13] + "_c"
 
 
-def _lsp_mac(port: LogicalSwitchPort) -> Optional[str]:
+def _lsp_mac(port: LogicalSwitchPort) -> str | None:
     """Pull the MAC out of a logical switch port's ``addresses`` (``"MAC IP"``)."""
     for entry in getattr(port, "addresses", None) or set():
         head = entry.split()[0] if entry.split() else ""
@@ -259,7 +259,7 @@ class EndpointInterface(_Schema):
 
 
 class ActivateResponse(_Schema):
-    Implements: List[str]
+    Implements: list[str]
 
 
 class CapabilitiesResponse(_Schema):
@@ -269,8 +269,8 @@ class CapabilitiesResponse(_Schema):
 
 class CreateNetworkRequest(_Schema):
     NetworkID: str
-    IPv4Data: List[IPAMData] = []
-    Options: Dict[str, Any] = {}
+    IPv4Data: list[IPAMData] = []
+    Options: dict[str, Any] = {}
 
 
 class DeleteNetworkRequest(_Schema):
@@ -307,7 +307,7 @@ class JoinResponse(_Schema):
 
 
 class EndpointInfoResponse(_Schema):
-    Value: Dict[str, str] = {}
+    Value: dict[str, str] = {}
 
 
 # --- app & error handling ---------------------------------------------------
@@ -536,10 +536,10 @@ def _socket_path(addr: str) -> str:
 
     Accepts ``unix:/path`` (the canonical form) or a bare ``/path``.
     """
-    return addr[len("unix:") :] if addr.startswith("unix:") else addr
+    return addr.removeprefix("unix:")
 
 
-def serve(socket: Optional[str] = None) -> None:
+def serve(socket: str | None = None) -> None:
     """Run the plugin server on a Unix socket until interrupted.
 
     ``socket`` defaults to ``settings.socket`` (``unix:/path`` or a bare path).
@@ -568,7 +568,7 @@ def serve(socket: Optional[str] = None) -> None:
             os.unlink(path)
 
 
-def main(argv: Optional[List[str]] = None) -> None:
+def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="OVN Docker network plugin")
     parser.add_argument(
         "--socket",

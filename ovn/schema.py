@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Annotated, Any, Dict, List, Literal, Optional, Set, Union
+from typing import Annotated, Any, Literal
 
 import pydantic
 from pydantic import Field, ValidationError, field_validator
@@ -29,7 +29,7 @@ class OVNAtomicType(str, Enum):
     string = "string"
     uuid = "uuid"
 
-    def unserialize(self, value: Any) -> Union[str, int, float, bool]:
+    def unserialize(self, value: Any) -> str | int | float | bool:
         if self == OVNAtomicType.string:
             return str(value)
         if self == OVNAtomicType.integer:
@@ -78,15 +78,15 @@ class OVNBaseType(BaseModel):
     """
 
     type: OVNAtomicType
-    enum: Optional[Set[str]] = None
-    minInteger: Optional[int] = None
-    maxInteger: Optional[int] = None
-    minReal: Optional[float] = None
-    maxReal: Optional[float] = None
-    minLength: Optional[int] = None
-    maxLength: Optional[int] = None
-    refTable: Optional[JsonID] = None
-    refType: Optional[RefType] = None
+    enum: set[str] | None = None
+    minInteger: int | None = None
+    maxInteger: int | None = None
+    minReal: float | None = None
+    maxReal: float | None = None
+    minLength: int | None = None
+    maxLength: int | None = None
+    refTable: JsonID | None = None
+    refType: RefType | None = None
 
     @field_validator("enum", mode="before")
     def check_enum(cls, v):
@@ -94,7 +94,7 @@ class OVNBaseType(BaseModel):
             return [v]
         return v[-1]
 
-    def unserialize(self, value: Any) -> Union[str, int, float, bool]:
+    def unserialize(self, value: Any) -> str | int | float | bool:
         return self.type.unserialize(value)
 
     def serialize(self, value: Any) -> Any:
@@ -113,10 +113,10 @@ class OVNType(BaseModel):
     The type of a database column
     """
 
-    key: Union[OVNBaseType, OVNAtomicType]
-    value: Optional[Union[OVNBaseType, OVNAtomicType]] = None
+    key: OVNBaseType | OVNAtomicType
+    value: OVNBaseType | OVNAtomicType | None = None
     min: MinInteger = 1
-    max: Union[pydantic.PositiveInt, Unlimited] = 1
+    max: pydantic.PositiveInt | Unlimited = 1
 
     @field_validator("max")
     def check_min_max_order(cls, v):
@@ -160,7 +160,7 @@ class OVNType(BaseModel):
             if value[0] == "set":
                 return set(map(self.key.unserialize, value.pop(1)))
             # sometimes we have the single object (not wrapped in a set)
-            return set([self.key.unserialize(value)])
+            return {self.key.unserialize(value)}
         if self.is_map():
             return dict(value.pop(1))
         return self.key.unserialize(value)
@@ -186,23 +186,23 @@ class OVNType(BaseModel):
         # Order matters: a set/map of "uuid" still has an *atomic* key, so the
         # cardinality (map -> set -> singleton) must be checked before falling
         # back to the scalar key type.
-        # These build runtime typing special forms (Dict/Set/Optional) from
+        # These build runtime typing special forms (Dict/Set/unions) from
         # values computed at runtime, which static checkers cannot model as
         # type expressions -- hence the ignores.
         key_type = self.key.as_python_type()
         if self.is_map():
             assert self.value is not None
-            return Dict[key_type, self.value.as_python_type()]  # type: ignore
+            return dict[key_type, self.value.as_python_type()]  # type: ignore
         if self.is_set():
-            return Set[key_type]  # type: ignore
+            return set[key_type]  # type: ignore
         if self.is_singleton() and self.min == 0:
-            return Optional[key_type]  # type: ignore
+            return key_type | None
         return key_type
 
 
 class ColumnSchema(BaseModel):
     # The "type" specifies the type of data stored in this column.
-    type: Union[OVNType, OVNAtomicType]
+    type: OVNType | OVNAtomicType
 
     # If "ephemeral" is specified as true, then this column's values are
     # not guaranteed to be durable; they may be lost when the database
@@ -227,8 +227,8 @@ class ColumnSchema(BaseModel):
 
 
 class TableSchema(BaseModel):
-    columns: Dict[str, ColumnSchema]
-    maxRows: Optional[int] = None
+    columns: dict[str, ColumnSchema]
+    maxRows: int | None = None
     # The "isRoot" boolean is used to determine whether rows in the
     # table require strong references from other rows to avoid garbage
     # collection.  (See the discussion of "strong" and "weak" references
@@ -255,10 +255,10 @@ class TableSchema(BaseModel):
     # enforced only at transaction commit time, after unreferenced rows
     # are deleted and dangling weak references are removed.  Ephemeral
     # columns may not be part of indexes.
-    indexes: Optional[List[Set[str]]] = None
+    indexes: list[set[str]] | None = None
 
-    def unserialize(self, record: Dict[str, Any]) -> Dict[str, Any]:
-        out: Dict[str, Any] = dict.fromkeys(record.keys())
+    def unserialize(self, record: dict[str, Any]) -> dict[str, Any]:
+        out: dict[str, Any] = dict.fromkeys(record.keys())
         for col, value in record.items():
             column = self.columns.get(col, self.columns.get("_" + col))
             if column is None:
@@ -266,8 +266,8 @@ class TableSchema(BaseModel):
             out[col] = column.unserialize(value)
         return out
 
-    def serialize(self, row: Dict[str, Any]) -> Dict[str, Any]:
-        out: Dict[str, Any] = dict.fromkeys(row.keys())
+    def serialize(self, row: dict[str, Any]) -> dict[str, Any]:
+        out: dict[str, Any] = dict.fromkeys(row.keys())
         for col, value in row.items():
             column = self.columns.get(col, self.columns.get("_" + col))
             if column is None:
@@ -318,15 +318,15 @@ class DatabaseSchema(BaseModel):
     # The "cksum" optionally reports an implementation-defined checksum
     # for the database schema.  Its use is primarily as a tool for
     # schema developers, and clients SHOULD ignore it.
-    cksum: Optional[str]
+    cksum: str | None
     # The value of "tables" is a JSON object whose names are table names
     # and whose values are TableSchemas
-    tables: Dict[JsonID, TableSchema]
+    tables: dict[JsonID, TableSchema]
 
     def complete(self):
         """Complete all the tables with uuid and version"""
         for table in self.tables.values():
             table.complete()
 
-    def classes(self) -> Dict[str, type]:
+    def classes(self) -> dict[str, type]:
         raise NotImplementedError

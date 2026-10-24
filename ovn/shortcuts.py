@@ -6,18 +6,19 @@ not atomic, so a database error can leave earlier rows in place.
 """
 
 import ipaddress
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Iterable, Literal, Mapping, Sequence
+from typing import Literal
 
 from ovn.models import (
     ACL,
+    NAT,
     DHCPOptions,
     LoadBalancer,
     LogicalRouter,
     LogicalRouterPort,
     LogicalSwitch,
     LogicalSwitchPort,
-    NAT,
     PortGroup,
 )
 

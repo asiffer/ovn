@@ -2,16 +2,16 @@ import json
 import socket
 from random import choice
 from string import ascii_letters, digits
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
-from ovn.ovsdb.errors import OVSDBError, TransactionError
+from ovn.ovsdb.errors import EmptyResultError, OVSDBError, TransactionError
 from ovn.ovsdb.transport import Connection
 from ovn.settings import Settings
 
 
 def parse_server_address(
     s: str,
-) -> Tuple[Union[Tuple[str, int], str], socket.AddressFamily]:
+) -> tuple[tuple[str, int] | str, socket.AddressFamily]:
     split = s.split(":")
     proto = split[0]
     if proto.lower() == "unix":
@@ -33,31 +33,33 @@ def random_json_id(size: int = 12) -> str:
 
 
 class OVSDBClient:
-    endpoint: Union[str, Tuple[str, int]]
+    endpoint: str | tuple[str, int]
     family: socket.AddressFamily
 
     def __init__(self, server_address: str):
         self.endpoint, self.family = parse_server_address(server_address)
         # self.transport = Connection(*parse_server_address(server_address))
-        self.id_history: List[str] = []
+        self.id_history: list[str] = []
 
     def set_server_address(self, server_address: str):
         self.endpoint, self.family = parse_server_address(server_address)
 
-    def __check_transact_errors(self, results: Optional[List[Dict[str, Any]]]):
+    def __check_transact_errors(self, results: list[dict[str, Any]] | None):
         if results is None:
             return
         for r in results:
             if "error" in r:
                 raise TransactionError(
-                    error=r.pop("error"), details=r.pop("details"), issue=r
+                    error=r.pop("error"),
+                    details=r.pop("details"),
+                    issue=r,
                 )
 
     def send(
         self,
         method: str,
-        params: List[Union[str, Dict[str, Any]]],
-        id: Optional[str],
+        params: list[str | dict[str, Any]],
+        id: str | None,
     ) -> Any:
         payload = {"method": method, "params": params, "id": id}
         # json-rpc
@@ -74,7 +76,7 @@ class OVSDBClient:
             result = json.loads(raw)
         # check empty response
         if result is None:
-            raise Exception(f"Error while requesting method '{method}': no response")
+            raise EmptyResultError(method=method)
         # check the id
         assert result["id"] == id, (
             f"Incorrect response id, expect {id}, got {result['id']}"
@@ -89,7 +91,7 @@ class OVSDBClient:
             )
         return result["result"]
 
-    def send_auto(self, method: str, params: List[Union[str, Dict[str, Any]]]) -> Any:
+    def send_auto(self, method: str, params: list[str | dict[str, Any]]) -> Any:
         """
         An id is randomly assigned
         """
@@ -117,7 +119,7 @@ class OVSDBClient:
     def transact(
         self,
         db_name: str,
-        operations: Union[Dict[str, Any], List[Dict[str, Any]]],
+        operations: dict[str, Any] | list[dict[str, Any]],
     ) -> Any:
         """
         This RPC method causes the database server to execute a series of
@@ -162,7 +164,7 @@ class OVSDBClient:
                 # return the id
                 return err.id
             # otherwise re-raise
-            raise err
+            raise
 
 
 # default client -----------------
@@ -177,9 +179,9 @@ class DefaultOVSDBClient(OVSDBClient):
     __instance__ = None
 
     def __init__(self):
-        return super().__init__(server_address=Settings().ovn_northbound)
+        super().__init__(server_address=Settings().ovn_northbound)
 
     def __new__(cls):
         if cls.__instance__ is None:
-            cls.__instance__ = super(DefaultOVSDBClient, cls).__new__(cls)
+            cls.__instance__ = super().__new__(cls)
         return cls.__instance__

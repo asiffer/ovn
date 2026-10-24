@@ -53,14 +53,14 @@ sw.delete()
 An instance is just a row. Set attributes and call `save()` to sync; call
 `fetch()` (or `refresh_from_db()`) to reload from the database.
 
-## High-level network use cases
+## High-level network shortcuts
 
-The `ovn.usecases` module composes models for common workflows while leaving
+The `ovn.shortcuts` module composes models for common workflows while leaving
 the regular model API available. For example, create a tenant router and routed
 segment, then attach a DHCP-addressed workload:
 
 ```python
-from ovn.usecases import attach_workload, create_tenant_network
+from ovn.shortcuts import attach_workload, create_tenant_network
 
 tenant = create_tenant_network(
     name="app",
@@ -171,7 +171,6 @@ The project uses [uv](https://docs.astral.sh/uv/) and targets Python ≥ 3.12.
 ```shell
 uv sync
 uv run pytest        # transport tests need no DB; model/client tests need one
-make generate        # regenerate model column mixins from the live schema
 ```
 
 A local OVN Northbound DB is needed for anything touching models or the client.

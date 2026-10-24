@@ -3,9 +3,9 @@ import os
 import random
 import socketserver
 import threading
+from collections.abc import Callable
 from random import choice
 from string import ascii_letters, digits
-from typing import Callable, Union
 
 import pytest
 
@@ -32,7 +32,7 @@ class ThreadedServer:
 
     def __init__(
         self,
-        server: Union[socketserver.TCPServer, socketserver.UnixStreamServer],
+        server: socketserver.TCPServer | socketserver.UnixStreamServer,
     ) -> None:
         self.__server__ = server
         self.__thread__ = threading.Thread(target=server.serve_forever, daemon=True)

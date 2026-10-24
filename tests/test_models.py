@@ -27,7 +27,7 @@ class TestLogicalSwitch:
         obj = LogicalSwitch(name="LogicalSwitch_to_test")
         obj.save()
         port = obj.create_port(
-            name="LogicalPort0", addresses=set(["80:fa:5b:06:72:b7 10.0.0.4"])
+            name="LogicalPort0", addresses={"80:fa:5b:06:72:b7 10.0.0.4"}
         )
         print(port)
 
@@ -162,7 +162,7 @@ class TestDHCPOptions:
         # )
 
         sp1 = switch.create_port(
-            name="sp1", addresses=set([f"{server_mac} 172.0.42.5"])
+            name="sp1", addresses={f"{server_mac} 172.0.42.5"}
         )
         # rp = router.create_port(
         #     name="rp0",

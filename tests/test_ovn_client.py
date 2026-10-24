@@ -28,7 +28,6 @@ def test_ovn_select_by_uuid(ovn_client: OVNClient):
     # first insert one
     result = ovn_client.insert(table="Logical_Switch")
     uuid = result[0]["uuid"]
-    #
     result = ovn_client.select(
         table="Logical_Switch", where=[("_uuid", "==", ("uuid", uuid))]
     )

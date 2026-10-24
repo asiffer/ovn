@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, Dict, Generic, List, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from ovn.client import OVNClient
 
@@ -11,10 +11,10 @@ else:
     T = TypeVar("T", bound="Model")
 
 
-class Manager(Generic[T]):
+class Manager[T: "Model"]:
     """The manager handles the interaction with the database"""
 
-    def __init__(self, model_cls: Type[T]) -> None:
+    def __init__(self, model_cls: type[T]) -> None:
         # Nothing here touches the database: the table name is a pure string
         # transform of the class name. The schema (and the socket round-trip it
         # needs) is fetched lazily on first real use via the cached properties
@@ -27,22 +27,22 @@ class Manager(Generic[T]):
         return OVNClient()
 
     @cached_property
-    def _attributes(self) -> List[str]:
+    def _attributes(self) -> list[str]:
         return list(self.client.schema.tables[self._table].columns.keys())
 
     @cached_property
-    def _mutable_attributes(self) -> List[str]:
+    def _mutable_attributes(self) -> list[str]:
         return [
             k
             for k, v in self.client.schema.tables[self._table].columns.items()
             if v.mutable
         ]
 
-    def list(self) -> List[T]:
+    def list(self) -> list[T]:
         """List all the objects"""
         return [self.model_cls(**r) for r in self.client.select(table=self._table)]
 
-    def get(self, uuid: str) -> Optional[T]:
+    def get(self, uuid: str) -> T | None:
         """Query object by uuid"""
         raw = self.get_raw(uuid)
         if raw is None:
@@ -59,14 +59,14 @@ class Manager(Generic[T]):
         )
         return self.client.wait_and_get(self._table, uuid, version)
 
-    def get_raw(self, uuid: str) -> Optional[Dict[str, Any]]:
+    def get_raw(self, uuid: str) -> dict[str, Any] | None:
         """Query object by uuid. Return the raw object"""
         r = self.client.get(table=self._table, uuid=uuid)
         if len(r) == 0:
             return None
         return r
 
-    def create_raw(self, **kwargs) -> Dict[str, Any]:
+    def create_raw(self, **kwargs) -> dict[str, Any]:
         """Insert a new row in the database and
         return the raw object (its atrtributes basically)"""
         r = self.client.create(table=self._table, row=kwargs)
@@ -77,7 +77,7 @@ class Manager(Generic[T]):
         and return the python object"""
         return self.model_cls(**self.create_raw(**kwargs))
 
-    def get_by_name(self, name: str) -> Optional[T]:
+    def get_by_name(self, name: str) -> T | None:
         """Query object by name (when relevant)"""
         if "name" not in self._mutable_attributes:
             raise AttributeError(

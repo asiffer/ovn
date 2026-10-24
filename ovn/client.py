@@ -1,7 +1,7 @@
 import random
 import string
 from copy import deepcopy
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union, overload
+from typing import Any, Literal, overload
 
 from ovn.ovsdb import DefaultOVSDBClient, OVSDBClient
 from ovn.schema import DatabaseSchema
@@ -12,16 +12,16 @@ DB_NAME = "OVN_Northbound"
 # OVN NB schema is stable for the lifetime of a server. Cache it per endpoint so
 # that constructing many OVNClients (e.g. one per model Manager) hits the wire
 # only once.
-_SCHEMA_CACHE: Dict[str, DatabaseSchema] = {}
+_SCHEMA_CACHE: dict[str, DatabaseSchema] = {}
 
 
-Record = Dict[str, Any]
+Record = dict[str, Any]
 
 # A 3-element JSON array of the form [<column>, <function>, <value>]
 # that represents a test on a column value.  Except as otherwise
 # specified below, <value> MUST have the same type as <column>.  The
 # meaning depends on the type of <column>
-Condition = Tuple[str, str, str | Tuple[Literal["uuid", "named-uuid"], str]]
+Condition = tuple[str, str, str | tuple[Literal["uuid", "named-uuid"], str]]
 
 
 Mutator = Literal["+=", "-=", "*=", "/=", "%=", "insert", "delete"]
@@ -29,7 +29,7 @@ Mutator = Literal["+=", "-=", "*=", "/=", "%=", "insert", "delete"]
 # that represents a change to a column value.  Except as otherwise
 # specified below, <value> must have the same type as <column>.  The
 # meaning depends on the type of <column>:
-Mutation = Tuple[str, Mutator, Any]
+Mutation = tuple[str, Mutator, Any]
 
 
 def random_id(length: int = 8) -> str:
@@ -46,7 +46,7 @@ def random_id(length: int = 8) -> str:
 class OperationComposer:
     """Object to concatenate several db operations"""
 
-    def __init__(self, operations: Optional[List[Dict[str, Any]]] = None):
+    def __init__(self, operations: list[dict[str, Any]] | None = None):
         self.__operations__ = operations if operations is not None else []
 
     def clear(self):
@@ -55,8 +55,8 @@ class OperationComposer:
     def select(
         self,
         table: str,
-        where: Optional[List[Condition]] = None,
-        columns: Optional[List[str]] = None,
+        where: list[Condition] | None = None,
+        columns: list[str] | None = None,
     ) -> "OperationComposer":
         operation = {"op": "select", "where": where or [], "table": table}
         if columns is not None:
@@ -66,7 +66,7 @@ class OperationComposer:
         return self
 
     def insert(
-        self, table: str, row: Optional[Record] = None, uuid_name: Optional[str] = None
+        self, table: str, row: Record | None = None, uuid_name: str | None = None
     ) -> "OperationComposer":
         """
         Insert a new row in the database and return its uuid
@@ -91,8 +91,8 @@ class OperationComposer:
     def update(
         self,
         table: str,
-        where: Optional[List[Condition]] = None,
-        row: Optional[Record] = None,
+        where: list[Condition] | None = None,
+        row: Record | None = None,
     ) -> "OperationComposer":
         operation = {
             "op": "update",
@@ -106,8 +106,8 @@ class OperationComposer:
     def mutate(
         self,
         table: str,
-        where: Optional[List[Condition]] = None,
-        mutations: Optional[List[Mutation]] = None,
+        where: list[Condition] | None = None,
+        mutations: list[Mutation] | None = None,
     ) -> "OperationComposer":
         operation = {
             "op": "mutate",
@@ -121,13 +121,13 @@ class OperationComposer:
     def wait(
         self,
         table: str,
-        where: Optional[List[Condition]] = None,
-        columns: Optional[List[str]] = None,
+        where: list[Condition] | None = None,
+        columns: list[str] | None = None,
         until: Literal["==", "!="] = "!=",
-        rows: Optional[List[Record]] = None,
-        timeout: Optional[int] = None,
+        rows: list[Record] | None = None,
+        timeout: int | None = None,
     ):
-        operation: Dict[str, Any] = {
+        operation: dict[str, Any] = {
             "op": "wait",
             "table": table,
             "where": where or [],
@@ -141,7 +141,7 @@ class OperationComposer:
         self.__operations__.append(operation)
         return self
 
-    def operations(self) -> List[Dict[str, Any]]:
+    def operations(self) -> list[dict[str, Any]]:
         """Return all the operations and flush the internal state"""
         out = deepcopy(self.__operations__)
         self.clear()
@@ -154,7 +154,7 @@ class OVNClient:
     some helpers to query the OVN northbound database
     """
 
-    def __init__(self, client_or_url: Optional[Union[str, OVSDBClient]] = None):
+    def __init__(self, client_or_url: str | OVSDBClient | None = None):
         if client_or_url is None:
             # not provided -> use default
             client: OVSDBClient = DefaultOVSDBClient()
@@ -188,10 +188,10 @@ class OVNClient:
     @overload
     def serialize(self, table: str, records: Record) -> Record: ...
     @overload
-    def serialize(self, table: str, records: List[Record]) -> List[Record]: ...
+    def serialize(self, table: str, records: list[Record]) -> list[Record]: ...
     def serialize(
-        self, table: str, records: Union[Record, List[Record]]
-    ) -> Union[Record, List[Record]]:
+        self, table: str, records: Record | list[Record]
+    ) -> Record | list[Record]:
         if not isinstance(records, list):
             return self.schema.tables[table].serialize(records)
         return [self.schema.tables[table].serialize(r) for r in records]
@@ -199,10 +199,10 @@ class OVNClient:
     @overload
     def unserialize(self, table: str, records: Record) -> Record: ...
     @overload
-    def unserialize(self, table: str, records: List[Record]) -> List[Record]: ...
+    def unserialize(self, table: str, records: list[Record]) -> list[Record]: ...
     def unserialize(
-        self, table: str, records: Union[Record, List[Record]]
-    ) -> Union[Record, List[Record]]:
+        self, table: str, records: Record | list[Record]
+    ) -> Record | list[Record]:
         if not isinstance(records, list):
             return self.schema.tables[table].unserialize(records)
         return [self.schema.tables[table].unserialize(r) for r in records]
@@ -210,13 +210,13 @@ class OVNClient:
     def select(
         self,
         table: str,
-        where: Optional[List[Condition]] = None,
-        columns: Optional[List[str]] = None,
-    ) -> List[Record]:
+        where: list[Condition] | None = None,
+        columns: list[str] | None = None,
+    ) -> list[Record]:
         composer = OperationComposer().select(table, where or [], columns)
         result = self.transact(composer)
         assert len(result) == 1, f"The results involve more than one response: {result}"
-        rows: List[Record] = result.pop().get("rows")
+        rows: list[Record] = result.pop().get("rows")
         return self.unserialize(table, rows)
 
     def get(self, table: str, uuid: str) -> Record:
@@ -228,7 +228,7 @@ class OVNClient:
         return rows[0] if rows else {}
 
     def insert(
-        self, table: str, row: Optional[Record] = None, uuid_name: Optional[str] = None
+        self, table: str, row: Record | None = None, uuid_name: str | None = None
     ):
         """
         Insert a new row in the database and return its uuid
@@ -237,7 +237,7 @@ class OVNClient:
         result = self.transact(composer)
         return self.unserialize(table, result)
 
-    def create(self, table: str, row: Optional[Record] = None):
+    def create(self, table: str, row: Record | None = None):
         name = random_id()
         serialized: Record = self.schema.tables[table].serialize(row or {})
         composer = OperationComposer()
@@ -256,14 +256,14 @@ class OVNClient:
     def update(
         self,
         table: str,
-        where: Optional[List[Condition]] = None,
-        row: Optional[Record] = None,
+        where: list[Condition] | None = None,
+        row: Record | None = None,
     ):
         serialized: Record = self.schema.tables[table].serialize(row or {})
         composer = OperationComposer().update(table, where or [], serialized)
         return self.transact(composer)
 
-    def mutate(self, table: str, where: List[Condition], mutations: List[Mutation]):
+    def mutate(self, table: str, where: list[Condition], mutations: list[Mutation]):
         composer = OperationComposer().mutate(table, where, mutations)
         return self.transact(composer)
 
@@ -273,8 +273,8 @@ class OVNClient:
         row_create: Record,
         table_bind: str,
         attr_bind: str,
-        where_bind: List[Condition],
-    ) -> Tuple[Record, Record]:
+        where_bind: list[Condition],
+    ) -> tuple[Record, Record]:
         """
         Create a new row in the database and bind it to another table
         Return first the created object and then the bound object
@@ -322,7 +322,7 @@ class OVNClient:
         assert result[0]["count"] == 1, f"Result is weird: {result}"
 
     def wait_and_get(self, table: str, uuid: str, version: str) -> Record:
-        where: List[Condition] = [("_uuid", "==", ("uuid", uuid))]
+        where: list[Condition] = [("_uuid", "==", ("uuid", uuid))]
         composer = OperationComposer()
         composer.wait(
             table,
@@ -334,7 +334,7 @@ class OVNClient:
         composer.select(table, where)
         result = self.transact(composer)
         # the first operation is the wait
-        rows: List[Record] = result[1]["rows"]
+        rows: list[Record] = result[1]["rows"]
         return self.unserialize(table, rows)[0]
 
     def transact(self, composer: OperationComposer):

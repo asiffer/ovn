@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from ovn.manager import Manager
 from ovn.models._columns import LogicalRouterPortColumns
@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from ovn.models.logical_router import LogicalRouter
 
 
-class LogicalRouterPortManager(Manager):
+class LogicalRouterPortManager(Manager["LogicalRouterPort"]):
     def add_to_logical_router(
         self, router: "LogicalRouter", **kwargs
     ) -> "LogicalRouterPort":
@@ -24,4 +24,4 @@ class LogicalRouterPortManager(Manager):
 
 
 class LogicalRouterPort(LogicalRouterPortColumns, Model):
-    objects: LogicalRouterPortManager
+    objects: ClassVar[LogicalRouterPortManager]

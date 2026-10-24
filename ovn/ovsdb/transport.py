@@ -47,7 +47,7 @@ class Connection:
             while len(chunk) > 0:
                 buffer += chunk
                 chunk = self.__socket__.recv(self.bufsize)
-        except socket.timeout:
+        except TimeoutError:
             pass
         return buffer
 

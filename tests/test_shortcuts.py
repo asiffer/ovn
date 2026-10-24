@@ -2,7 +2,7 @@ from typing import cast
 
 import pytest
 
-import ovn.usecases as usecases
+from ovn import shortcuts
 from ovn.models import DHCPOptions, LogicalRouter, LogicalSwitch, PortGroup
 
 
@@ -66,14 +66,14 @@ def fake_models(monkeypatch):
         "NAT": FakeRow,
         "PortGroup": FakeRow,
     }.items():
-        monkeypatch.setattr(usecases, name, model)
+        monkeypatch.setattr(shortcuts, name, model)
 
 
 def test_create_network_segment_with_dhcp(fake_models):
     router = FakeRouter(name="router")
     router.save()
 
-    segment = usecases.create_network_segment(
+    segment = shortcuts.create_network_segment(
         name="app",
         subnet="10.0.1.0/24",
         gateway="10.0.1.1",
@@ -93,7 +93,7 @@ def test_create_network_segment_with_dhcp(fake_models):
 
 def test_create_network_segment_rejects_gateway_outside_subnet(fake_models):
     with pytest.raises(ValueError, match="inside subnet"):
-        usecases.create_network_segment(
+        shortcuts.create_network_segment(
             name="app",
             subnet="10.0.1.0/24",
             gateway="10.0.2.1",
@@ -107,13 +107,13 @@ def test_attach_workload_supports_static_and_dhcp(fake_models):
     dhcp = FakeRow()
     dhcp.save()
 
-    static_port = usecases.attach_workload(
+    static_port = shortcuts.attach_workload(
         cast(LogicalSwitch, switch),
         name="static-vm",
         mac="00:11:22:33:44:66",
         ip_address="10.0.1.10",
     )
-    dynamic_port = usecases.attach_workload(
+    dynamic_port = shortcuts.attach_workload(
         cast(LogicalSwitch, switch),
         name="dhcp-vm",
         mac="00:11:22:33:44:77",
@@ -129,13 +129,13 @@ def test_attach_workload_supports_static_and_dhcp(fake_models):
 def test_attach_workload_requires_exactly_one_address_mode(fake_models):
     switch = FakeSwitch(name="app")
     with pytest.raises(ValueError, match="exactly one"):
-        usecases.attach_workload(
+        shortcuts.attach_workload(
             cast(LogicalSwitch, switch), name="vm", mac="00:11:22:33:44:66"
         )
 
 
 def test_create_tenant_network(fake_models):
-    tenant = usecases.create_tenant_network(
+    tenant = shortcuts.create_tenant_network(
         name="tenant",
         subnet="192.0.2.0/24",
         gateway="192.0.2.1",
@@ -150,7 +150,7 @@ def test_configure_outbound_nat_attaches_rule_to_router(fake_models):
     router = FakeRouter(name="tenant-router", nat=set())
     router.save()
 
-    nat = usecases.configure_outbound_nat(
+    nat = shortcuts.configure_outbound_nat(
         cast(LogicalRouter, router),
         logical_ip="10.0.1.0/24",
         external_ip="192.0.2.10",
@@ -165,7 +165,7 @@ def test_apply_security_policy_attaches_acl_rows(fake_models):
     port_group = FakeRow(name="web")
     port_group.save()
 
-    acls = usecases.allow_web_traffic(cast(PortGroup, port_group))
+    acls = shortcuts.allow_web_traffic(cast(PortGroup, port_group))
 
     assert len(acls) == 2
     assert port_group.acls == {acl._uuid for acl in acls}
@@ -178,7 +178,7 @@ def test_apply_security_policy_attaches_acl_rows(fake_models):
 def test_create_service_endpoint_attaches_load_balancer(fake_models):
     switch = FakeSwitch(name="app", load_balancer=set())
 
-    lb = usecases.create_service_endpoint(
+    lb = shortcuts.create_service_endpoint(
         name="web",
         vip="192.0.2.20:80",
         backends=["10.0.1.10:80", "10.0.1.11:80"],
