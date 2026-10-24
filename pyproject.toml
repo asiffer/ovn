@@ -13,6 +13,8 @@ license = { text = "Apache-2.0" }
 [project.optional-dependencies]
 # `ovn.docker`: Docker network plugin backing networks with OVN (single host)
 docker = ["fastapi>=0.110.0", "uvicorn>=0.29.0", "pyroute2>=0.9.6"]
+# `ovn.mcp`: MCP server exposing basic OVN Northbound operations
+mcp = ["mcp>=2.0.0,<3"]
 
 [build-system]
 requires = ["hatchling"]
@@ -38,3 +40,4 @@ dev = [
 [project.scripts]
 ovn = "ovn.cli:entrypoint"
 ovn-docker-driver = "ovn.docker:main"
+ovn-mcp = "ovn.mcp_server:main"

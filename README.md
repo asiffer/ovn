@@ -120,6 +120,20 @@ ovn shell     # IPython shell with every model preloaded
 ovn schema    # dump the live Northbound schema as JSON
 ```
 
+## MCP server (optional)
+
+Install the MCP extra and start the stdio server:
+
+```shell
+pip install "ovn[mcp]"
+ovn-mcp
+```
+
+The server exposes basic tools for listing, looking up, creating, and deleting
+logical switches and routers, plus listing, creating, and deleting their
+attached ports. Tool results include the loaded model row fields. It uses the
+configured `OVN_NB_DB` endpoint and connects only when a tool is called.
+
 ## Docker network driver (optional)
 
 With the `docker` extra installed (`pip install "ovn[docker]"`), `ovn` can act
