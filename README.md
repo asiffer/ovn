@@ -177,4 +177,4 @@ export OVN_NB_DB=tcp:127.0.0.1:6641
 
 ## License
 
-MIT
+Licensed under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
