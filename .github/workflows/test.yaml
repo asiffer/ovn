@@ -30,8 +30,21 @@ jobs:
       - name: Check types with ty
         run: uv run ty check
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image (with layer cache)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./docker
+          file: ./docker/Dockerfile
+          tags: ovn:latest
+          load: true # make the image available to `docker run` in later steps
+          cache-from: type=gha
+          cache-to: type=gha,mode=max # mode=max caches intermediate stages too
+
       - name: Start OVN Northbound
-        run: docker compose -f docker/docker-compose.yml up --build --detach --wait --wait-timeout 120
+        run: docker compose -f docker/docker-compose.yml up --detach --wait --wait-timeout 120
 
       - name: Run tests
         run: |
