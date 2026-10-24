@@ -82,21 +82,16 @@ workload_port = attach_workload(
 )
 ```
 
-The helpers are:
-
-- `create_network_segment(...)` creates a logical switch and connects it to an
-  existing router. It can also create DHCP options for the subnet.
-- `create_tenant_network(...)` creates a router and one routed segment.
-- `attach_workload(...)` attaches a switch port with either a static
-  `ip_address` or `dhcp_options`; provide exactly one.
-- `configure_outbound_nat(...)` creates and attaches a source-NAT rule to a
-  router. It does not create an external network, router interface, or default
-  route.
-- `apply_security_policy(...)` attaches caller-defined `ACLRule` rules to a
-  port group; `allow_web_traffic(...)` is a preset for TCP ports 80 and 443.
-- `create_service_endpoint(...)` creates a load balancer and attaches it to
-  the selected switches and/or routers. The VIP and backends use OVN's
-  `IP:port` format.
+| Helper                         | Description                                                                                                                  |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| `create_network_segment(...)`  | Creates a logical switch and connects it to an existing router. Can also create DHCP options for the subnet.                 |
+| `create_tenant_network(...)`   | Creates a router and one routed segment.                                                                                     |
+| `attach_workload(...)`         | Attaches a switch port with either a static `ip_address` or `dhcp_options`; provide exactly one.                             |
+| `configure_outbound_nat(...)`  | Creates and attaches a source-NAT rule to a router. Does not create an external network, router interface, or default route. |
+| `configure_static_route(...)`  | Adds a static route to a router after validating destination and next-hop IP versions.                                       |
+| `apply_security_policy(...)`   | Attaches caller-defined `ACLRule` rules to a port group.                                                                     |
+| `allow_web_traffic(...)`       | A preset security policy for TCP ports 80 and 443.                                                                           |
+| `create_service_endpoint(...)` | Creates a load balancer and attaches it to selected switches and/or routers. VIP and backends use OVN's `IP:port` format.    |
 
 Helpers return the created model instances (or workflow dataclasses) for
 further customization. Multi-step workflows perform several database
@@ -137,7 +132,7 @@ ovn-docker-driver
 docker network create -d ovn mynet
 ```
 
-`CreateNetwork` becomes a `Logical_Switch`, each container gets a
+The `CreateNetwork` API methods translates into a `Logical_Switch`, each container gets a
 `Logical_Switch_Port` bound to the local integration bridge (`br-int`). See
 [`ovn/docker.py`](ovn/docker.py) for the full mapping.
 

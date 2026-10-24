@@ -48,6 +48,7 @@ class FakeSwitch(FakeRow):
 
 class FakeRouter(FakeRow):
     nat: set[str]
+    static_routes: set[str]
 
     def create_port(self, **attributes):
         port = FakePort(**attributes)
@@ -62,6 +63,7 @@ def fake_models(monkeypatch):
         "DHCPOptions": FakeRow,
         "LoadBalancer": FakeRow,
         "LogicalRouter": FakeRouter,
+        "LogicalRouterStaticRoute": FakeRow,
         "LogicalSwitch": FakeSwitch,
         "NAT": FakeRow,
         "PortGroup": FakeRow,
@@ -159,6 +161,32 @@ def test_configure_outbound_nat_attaches_rule_to_router(fake_models):
     assert nat.type == "snat"
     assert nat.logical_ip == "10.0.1.0/24"
     assert router.nat == {nat._uuid}
+
+
+def test_configure_static_route_attaches_route_to_router(fake_models):
+    router = FakeRouter(name="tenant-router", static_routes=set())
+    router.save()
+
+    route = shortcuts.configure_static_route(
+        cast(LogicalRouter, router),
+        destination="10.2.3.4/24",
+        nexthop="192.0.2.1",
+        output_port="uplink",
+    )
+
+    assert route.ip_prefix == "10.2.3.0/24"
+    assert route.nexthop == "192.0.2.1"
+    assert route.output_port == "uplink"
+    assert router.static_routes == {route._uuid}
+
+
+def test_configure_static_route_requires_matching_ip_versions(fake_models):
+    with pytest.raises(ValueError, match="same IP version"):
+        shortcuts.configure_static_route(
+            cast(LogicalRouter, FakeRouter(name="tenant-router")),
+            destination="10.0.0.0/24",
+            nexthop="2001:db8::1",
+        )
 
 
 def test_apply_security_policy_attaches_acl_rows(fake_models):

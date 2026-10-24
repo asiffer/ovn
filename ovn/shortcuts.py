@@ -17,6 +17,7 @@ from ovn.models import (
     LoadBalancer,
     LogicalRouter,
     LogicalRouterPort,
+    LogicalRouterStaticRoute,
     LogicalSwitch,
     LogicalSwitchPort,
     PortGroup,
@@ -182,6 +183,37 @@ def configure_outbound_nat(
     return nat
 
 
+def configure_static_route(
+    router: LogicalRouter,
+    *,
+    destination: str,
+    nexthop: str,
+    output_port: str | None = None,
+    policy: Literal["dst-ip", "src-ip"] | None = None,
+    route_table: str = "",
+) -> LogicalRouterStaticRoute:
+    """Add a static route to a router."""
+    network = ipaddress.ip_network(destination, strict=False)
+    next_hop = ipaddress.ip_address(nexthop)
+    if network.version != next_hop.version:
+        raise ValueError("destination and nexthop must use the same IP version")
+
+    route = LogicalRouterStaticRoute(
+        ip_prefix=str(network),
+        nexthop=str(next_hop),
+        output_port=output_port,
+        policy=policy,
+        route_table=route_table,
+    )
+    route.save()
+
+    router_routes = set(getattr(router, "static_routes", set()) or set())
+    router_routes.add(route._uuid)
+    router.static_routes = router_routes
+    router.save()
+    return route
+
+
 def apply_security_policy(
     port_group: PortGroup,
     rules: Iterable[ACLRule],
@@ -272,6 +304,7 @@ __all__ = [
     "apply_security_policy",
     "attach_workload",
     "configure_outbound_nat",
+    "configure_static_route",
     "create_network_segment",
     "create_service_endpoint",
     "create_tenant_network",
