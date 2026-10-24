@@ -1,16 +1,17 @@
-# OVN
+![ovn — script open virtual network with python](assets/banner.png)
 
-Script [Open Virtual Network](https://github.com/ovn-org/ovn) with Python.
+[![Build and release](https://github.com/asiffer/ovn/actions/workflows/build.yml/badge.svg)](https://github.com/asiffer/ovn/actions/workflows/build.yml)
 
-Most tools for deploying infrastructure (the whole Infrastructure-as-Code
-ecosystem) take a *declarative* approach: you hand them a configuration file and
-they reconcile the world to match it. `ovn` (a.k.a. **ovn**) takes the other
-road — it lets you **script** an OVN network from Python, with a Django-like ORM
-over the OVN **Northbound** database.
+[![Test](https://github.com/asiffer/ovn/actions/workflows/test.yaml/badge.svg)](https://github.com/asiffer/ovn/actions/workflows/test.yaml)
 
-It is a pure [OVSDB](https://datatracker.ietf.org/doc/html/rfc7047) client
-(JSON-RPC over a socket): it talks directly to the Northbound DB and lets OVN do
-the rest. There is **no dependency on the `ovn`/`ovs` C tooling** at runtime.
+Script [Open Virtual Network (OVN)](https://github.com/ovn-org/ovn) directly
+from Python. Instead of describing infrastructure in a declarative
+configuration and relying on a reconciler, use `ovn` to create and manage
+network resources with a Django-style ORM for the OVN Northbound database.
+
+`ovn` ships a pure [OVSDB](https://datatracker.ietf.org/doc/html/rfc7047) client
+that connects to the Northbound database over JSON-RPC. It has no runtime
+dependency on the `ovn` or `ovs` C command-line tools.
 
 ## Install
 
