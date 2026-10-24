@@ -1,7 +1,6 @@
 ![ovn — script open virtual network with python](assets/banner.png)
 
 [![Build and release](https://github.com/asiffer/ovn/actions/workflows/build.yml/badge.svg)](https://github.com/asiffer/ovn/actions/workflows/build.yml)
-
 [![Test](https://github.com/asiffer/ovn/actions/workflows/test.yaml/badge.svg)](https://github.com/asiffer/ovn/actions/workflows/test.yaml)
 
 Script [Open Virtual Network (OVN)](https://github.com/ovn-org/ovn) directly
