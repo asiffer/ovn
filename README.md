@@ -152,7 +152,6 @@ summed up below.
 `ovn` is a thin OVN Northbound client. It manages the database; OVN does the
 rest.
 
-![](assets/architecture/ovn.png)
 
 Internally it is layered low → high:
 
